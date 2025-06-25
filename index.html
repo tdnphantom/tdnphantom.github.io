@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class=""> <!-- The 'dark' class will be toggled here -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,19 +10,30 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        // Set dark mode based on Tailwind's recommendation
+        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+    </script>
     <style>
         /* Use Inter as the default font */
         body {
-            background-image: url(/assets/camellya.jpg);
+            /* You can keep your background image, but it might obscure the dark/light mode background effect */
+            /* background-image: url(/assets/camellya.jpg); */
             font-family: 'Inter', sans-serif;
         }
+        /* Add a smooth transition for color changes */
         body, .main-card, .theme-toggle-button {
             transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, border-color 0.3s ease-in-out;
         }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-
+<body class="bg-gradient-to-br from-gray-50 to-gray-200 dark:from-gray-900 dark:to-slate-800 text-gray-800 dark:text-gray-200">
+    
     <!-- Theme Toggle Button -->
     <div class="absolute top-4 right-4">
         <button id="theme-toggle" type="button" class="theme-toggle-button text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
@@ -37,7 +48,7 @@
         <!-- Glassmorphism Card -->
         <div class="main-card text-center w-full max-w-2xl mx-auto bg-white/50 dark:bg-slate-800/50 backdrop-blur-lg p-8 rounded-2xl shadow-lg border border-gray-200/50 dark:border-slate-700/50">
             <!-- Profile Image -->
-            <img src="https://avatars.githubusercontent.com/u/49758975?v=4" alt="Profile Picture" class="w-32 h-32 rounded-full mx-auto mb-6 shadow-lg border-4 border-white dark:border-gray-800">
+            <img src="https://avatars.githubusercontent.com/u/49758975?v=4" alt="Profile Picture" class="w-32 h-32 rounded-full mx-auto mb-6 shadow-lg border-4 border-white/50 dark:border-slate-700/50">
 
             <!-- Main Heading -->
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
@@ -45,7 +56,7 @@
             </h1>
 
             <!-- Subheading -->
-            <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">
                 logo nya biarin aja lh asal ya, yg penting kn button nya fungsi :D
             </p>
 
@@ -53,31 +64,31 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 
                 <!-- Button 1 -->
-                <a href="/calculator/calculator.html" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-gray-800 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                <a href="/calculator/calculator.html" target="_blank" rel="noopener noreferrer" class="group bg-white/70 dark:bg-slate-700/50 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h3m-3-10h.01M9 17h.01M9 13h.01M12 17h.01M15 17h.01M12 13h.01M15 13h.01M12 10h.01M15 10h.01M15 7h.01" /></svg>
                     <span class="font-medium">split bill calculator</span>
                 </a>
 
                 <!-- Button 2 -->
-                <a href="https://github.com/tdnphantom" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-gray-800 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l4 4m0 0l-4 4m4-4H3" /></svg>
+                <a href="https://github.com/tdnphantom" target="_blank" rel="noopener noreferrer" class="group bg-white/70 dark:bg-slate-700/50 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-sky-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 7.756a4.5 4.5 0 1 0 0 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     <span class="font-medium">guthib</span>
                 </a>
 
                 <!-- Button 3 -->
-                <a href="/passcheck/passcheck.html" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-gray-800 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9V3" /></svg>
+                <a href="/passcheck/passcheck.html" target="_blank" rel="noopener noreferrer" class="group bg-white/70 dark:bg-slate-700/50 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-purple-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.864 4.243A7.5 7.5 0 0 1 19.5 10.5c0 2.92-.556 5.709-1.588 8.188a11.215 11.215 0 0 1-1.413 2.487c-.823.823-1.843 1.48-2.92 1.944A9.933 9.933 0 0 1 12 22.5c-2.647 0-5.091-.95-7.036-2.588A13.37 13.37 0 0 1 2.25 10.5c0-4.635 3.067-8.59 7.262-9.753a5.25 5.25 0 0 1 5.343 5.343Z" /></svg>
                     <span class="font-medium">password strength checker</span>
                 </a>
 
                 <!-- Button 4 -->
-                <a href="https://guthib.com" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-gray-800 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                <a href="https://guthib.com" target="_blank" rel="noopener noreferrer" class="group bg-white/70 dark:bg-slate-700/50 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-rose-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
                     <span class="font-medium">blm ada</span>
                 </a>
-
-                 <!-- Button 5 -->
-                <a href="https://youtu.be/dQw4w9WgXcQ?si=Ol1hyJyDDonla-cN" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-gray-800 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
+                
+                <!-- Button 5 - FIX: Combined the two 'class' attributes into one -->
+                <a href="https://youtu.be/dQw4w9WgXcQ?si=Ol1hyJyDDonla-cN" target="_blank" rel="noopener noreferrer" class="group bg-white/70 dark:bg-slate-700/50 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M6.111 11.89A5.5 5.5 0 1 1 15.501 8 .75.75 0 0 0 17 8a7 7 0 1 0-11.95 4.95.75.75 0 0 0 1.06-1.06Z" /> 
                         <path d="M8.232 6.232a2.5 2.5 0 0 0 0 3.536.75.75 0 1 1-1.06 1.06A4 4 0 1 1 14 8a.75.75 0 0 1-1.5 0 2.5 2.5 0 0 0-4.268-1.768Z" />
@@ -86,15 +97,54 @@
                     <span class="font-medium">ini juga belum</span>
                 </a>
 
-                 <!-- Button 6 -->
-                <a href="https://www.proprofs.com/quiz-school/story.php?title=am-i-stupid-test" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-gray-800 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-rose-400" viewBox="0 0 20 20" fill="currentColor"> <path fill-rule="evenodd" d="m5.965 4.904 9.131 9.131a6.5 6.5 0 0 0-9.131-9.131Zm8.07 10.192L4.904 5.965a6.5 6.5 0 0 0 9.131 9.131ZM4.343 4.343a8 8 0 1 1 11.314 11.314A8 8 0 0 1 4.343 4.343Z" clip-rule="evenodd" /></svg>
+                <!-- Button 6 - FIX: Combined the two 'class' attributes into one -->
+                <a href="https://www.proprofs.com/quiz-school/story.php?title=am-i-stupid-test" target="_blank" rel="noopener noreferrer" class="group bg-white/70 dark:bg-slate-700/50 text-gray-800 dark:text-white py-3 px-6 rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                         <path fill-rule="evenodd" d="m5.965 4.904 9.131 9.131a6.5 6.5 0 0 0-9.131-9.131Zm8.07 10.192L4.904 5.965a6.5 6.5 0 0 0 9.131 9.131ZM4.343 4.343a8 8 0 1 1 11.314 11.314A8 8 0 0 1 4.343 4.343Z" clip-rule="evenodd" />
+                    </svg>
                     <span class="font-medium">apalagi ini</span>
                 </a>
 
             </div>
         </div>
     </div>
+
+    <!-- FIX: Re-added the script for the theme toggle -->
+    <script>
+        // Icons
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        const themeToggleButton = document.getElementById('theme-toggle');
+
+        // Function to update icon visibility
+        const updateIcons = () => {
+            if (document.documentElement.classList.contains('dark')) {
+                themeToggleLightIcon.classList.remove('hidden');
+                themeToggleDarkIcon.classList.add('hidden');
+            } else {
+                themeToggleLightIcon.classList.add('hidden');
+                themeToggleDarkIcon.classList.remove('hidden');
+            }
+        };
+
+        // Initial icon state
+        updateIcons();
+
+        themeToggleButton.addEventListener('click', () => {
+            // toggle theme
+            document.documentElement.classList.toggle('dark');
+            
+            // update localStorage
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.theme = 'dark';
+            } else {
+                localStorage.theme = 'light';
+            }
+            
+            // update icons
+            updateIcons();
+        });
+    </script>
 
 </body>
 </html>
