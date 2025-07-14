@@ -55,6 +55,16 @@
         opacity: 1;
     }
 
+    #bg-video{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: -1;
+    }
+
     /* Style for the modal content box */
     #game-modal-content {
         position: relative;
@@ -118,6 +128,10 @@
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <video autoplay muted loop playsinline id="bg-video">
+        <source src="assets/web-bg.webm" type="video/webm"/>
+    </video>
 
     <!-- Theme Toggle Button -->
     <div class="absolute top-4 right-4">
