@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular Hextris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            touch-action: none; /* Disable pinch-zoom and other gestures */
+        }
+        canvas {
+            display: block;
+            background-color: #1a1a2e;
+            cursor: pointer;
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        .ui-element {
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        .modal {
+            background-color: rgba(26, 26, 46, 0.85);
+            backdrop-filter: blur(10px);
+        }
+        .frenzy-active {
+            box-shadow: 0 0 30px 10px #1e90ff, inset 0 0 30px 5px #1e90ff;
+        }
+        .difficulty-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .difficulty-btn:hover {
+            transform: scale(1.05);
+        }
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+    </style>
+</head>
+<body class="bg-[#1a1a2e] text-white flex items-center justify-center h-screen m-0">
+
+    <div id="game-container" class="relative w-full h-full flex items-center justify-center">
+        <canvas id="gameCanvas"></canvas>
+        <div class="absolute top-5 left-5 text-2xl ui-element">Score: <span id="score">0</span></div>
+        <div class="absolute top-5 right-5 text-center ui-element">
+            <div class="text-lg">Next</div>
+            <div id="next-block-container" class="w-12 h-12 mt-2 relative"></div>
+        </div>
+        <div id="frenzy-timer" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl font-bold text-cyan-300 ui-element hidden"></div>
+
+        <!-- Game Over Modal -->
+        <div id="gameOverModal" class="absolute inset-0 z-10 hidden items-center justify-center modal">
+            <div class="text-center p-8 rounded-lg border border-cyan-400/50 shadow-2xl shadow-cyan-500/20">
+                <h2 class="text-5xl font-bold mb-4 text-cyan-300 ui-element">Game Over</h2>
+                <p class="text-2xl mb-2">Final Score: <span id="finalScore" class="font-bold text-yellow-300">0</span></p>
+                <p class="text-xl mb-6">High Score: <span id="highScore" class="font-bold text-green-300">0</span></p>
+                <button id="restartButton" class="bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-bold py-3 px-8 rounded-lg text-xl transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/50">
+                    Play Again
+                </button>
+            </div>
+        </div>
+        
+        <!-- Start Game Modal -->
+        <div id="startModal" class="absolute inset-0 z-10 flex items-center justify-center modal">
+            <div class="text-center p-8 rounded-lg border border-cyan-400/50 shadow-2xl shadow-cyan-500/20">
+                <h2 class="text-5xl font-bold mb-4 text-cyan-300 ui-element">Circular Fall</h2>
+                <p class="text-xl mb-6 max-w-md mx-auto">Rotate the hexagon to catch blocks. Match 3 or more of the same color to clear them.</p>
+                <p class="text-lg mb-8">Choose your difficulty:</p>
+                <div class="flex justify-center gap-4 mb-8">
+                    <button data-difficulty="easy" class="difficulty-btn bg-green-500 hover:bg-green-400 text-gray-900 font-bold py-3 px-8 rounded-lg text-xl shadow-lg shadow-green-500/50">Easy</button>
+                    <button data-difficulty="medium" class="difficulty-btn bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 px-8 rounded-lg text-xl shadow-lg shadow-yellow-500/50">Medium</button>
+                    <button data-difficulty="hard" class="difficulty-btn bg-red-500 hover:bg-red-400 text-gray-900 font-bold py-3 px-8 rounded-lg text-xl shadow-lg shadow-red-500/50">Hard</button>
+                </div>
+                <!-- Colorblind Mode Toggle -->
+                <div class="flex items-center justify-center space-x-3">
+                    <span class="text-lg">Colorblind Mode</span>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="colorblind-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                        <label for="colorblind-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script>
+        // --- DOM Elements ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const finalScoreEl = document.getElementById('finalScore');
+        const highScoreEl = document.getElementById('highScore');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const startModal = document.getElementById('startModal');
+        const restartButton = document.getElementById('restartButton');
+        const nextBlockContainer = document.getElementById('next-block-container');
+        const frenzyTimerEl = document.getElementById('frenzy-timer');
+        const colorblindToggle = document.getElementById('colorblind-toggle');
+
+        // --- Game Configuration ---
+        let baseSize, center, outerRadius, hexagonRadius, blockSize;
+        const SIDES = 6;
+        const ROTATION_ANGLE = Math.PI / 3;
+        const COLORS = {
+            'R': '#ff4757', // Red
+            'O': '#ffa502', // Orange
+            'G': '#2ed573', // Green
+            'B': '#1e90ff', // Blue
+            'P': '#8e44ad', // Purple
+            'Y': '#f1c40f'  // Yellow
+        };
+        const COLOR_KEYS = Object.keys(COLORS);
+        const FRENZY_COLOR_KEY = 'B'; // Changed from 'C' to 'B'
+        const FRENZY_COLOR = COLORS[FRENZY_COLOR_KEY]; // Changed from cyan to blue
+        const EASING_FACTOR = 0.15;
+
+        const DIFFICULTY_SETTINGS = {
+            easy:   { size: 1.15, speed: 0.9, interval: 200 },
+            medium: { size: 1.0,  speed: 1.0, interval: 180 },
+            hard:   { size: 0.85, speed: 1.1, interval: 160 }
+        };
+        let currentDifficulty;
+
+        // --- Game State ---
+        let centralHexagon = { rotation: 0 };
+        let targetRotation = 0;
+        let stacks = Array.from({ length: SIDES }, () => []);
+        let fallingBlocks = [];
+        let particles = [];
+        let score = 0;
+        let highScore = localStorage.getItem('circularFallHighScore') || 0;
+        let isGameOver = false;
+        let gameRunning = false;
+        let isColorblindMode = false;
+        let spawnTimer = 0;
+        let spawnInterval = 180;
+        let nextColorKey;
+        let isFrenzyMode = false;
+        let frenzyScoreThreshold = 250;
+        let frenzyScoreIncrement = 250;
+
+        // --- Audio Setup (Tone.js) ---
+        const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination();
+        const frenzySynth = new Tone.MonoSynth({ oscillator: { type: "fmsquare", modulationType: "sawtooth", modulationIndex: 3, harmonicity: 3.4 }, envelope: { attack: 0.001, decay: 0.1, sustain: 0.1, release: 0.1 }, filterEnvelope: { attack: 0.001, decay: 0.01, sustain: 0.5, baseFrequency: 200, octaves: 7, exponent: 2 } }).toDestination();
+
+        const sounds = {
+            match: () => synth.triggerAttackRelease(["C5", "E5", "G5"], "8n"),
+            gameOver: () => synth.triggerAttackRelease("C3", "1n"),
+            attach: () => synth.triggerAttackRelease("C4", "16n"),
+            frenzyStart: () => frenzySynth.triggerAttackRelease("C6", "0.5s"),
+            frenzyEnd: () => frenzySynth.triggerAttackRelease("C4", "0.5s"),
+            rotate: () => synth.triggerAttackRelease("C3", "32n", Tone.now(), 0.5)
+        };
+
+        // --- Utility Functions ---
+        function getRandomColorKey() {
+            return COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+        }
+
+        function resizeCanvas() {
+            const size = Math.min(window.innerWidth, window.innerHeight) * 0.95;
+            canvas.width = size;
+            canvas.height = size;
+            baseSize = size;
+            center = { x: baseSize / 2, y: baseSize / 2 };
+            outerRadius = baseSize * 0.48;
+            
+            const sizeMultiplier = currentDifficulty ? DIFFICULTY_SETTINGS[currentDifficulty].size : 1.0;
+            hexagonRadius = baseSize * 0.12 * sizeMultiplier; 
+            blockSize = hexagonRadius * 0.33;
+            draw();
+        }
+
+        // --- Drawing Functions ---
+        function drawHexagon(x, y, radius, rotation, color, lineWidth = 4) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.beginPath();
+            for (let i = 0; i < SIDES; i++) {
+                const angle = ROTATION_ANGLE * i;
+                ctx.lineTo(radius * Math.cos(angle), radius * Math.sin(angle));
+            }
+            ctx.closePath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            if (isFrenzyMode) {
+                 ctx.shadowColor = FRENZY_COLOR;
+                 ctx.shadowBlur = 20;
+            }
+            ctx.stroke();
+            ctx.restore();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBlock(x, y, colorKey) {
+            const color = isFrenzyMode ? FRENZY_COLOR : COLORS[colorKey];
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            for (let i = 0; i < SIDES; i++) {
+                const angle = ROTATION_ANGLE * i;
+                ctx.lineTo(blockSize * Math.cos(angle), blockSize * Math.sin(angle));
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            if (isColorblindMode) {
+                ctx.fillStyle = 'white';
+                ctx.font = `${blockSize * 1.2}px Poppins`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(colorKey, 0, 0);
+            }
+            ctx.restore();
+        }
+        
+        function drawNextBlock() {
+            nextBlockContainer.innerHTML = '';
+            const color = isFrenzyMode ? FRENZY_COLOR : COLORS[nextColorKey];
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute('viewBox', '0 0 100 100');
+            const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            let points = "";
+            for (let i = 0; i < SIDES; i++) {
+                const angle = ROTATION_ANGLE * i;
+                const px = 50 + 45 * Math.cos(angle);
+                const py = 50 + 45 * Math.sin(angle);
+                points += `${px},${py} `;
+            }
+            polygon.setAttribute('points', points.trim());
+            polygon.setAttribute('fill', color);
+            svg.appendChild(polygon);
+
+            if (isColorblindMode) {
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute('x', '50');
+                text.setAttribute('y', '55');
+                text.setAttribute('font-family', 'Poppins');
+                text.setAttribute('font-size', '40');
+                text.setAttribute('fill', 'white');
+                text.setAttribute('text-anchor', 'middle');
+                text.textContent = nextColorKey;
+                svg.appendChild(text);
+            }
+            nextBlockContainer.appendChild(svg);
+        }
+
+        function drawStacks() {
+            for (let i = 0; i < SIDES; i++) {
+                const angle = ROTATION_ANGLE * i + centralHexagon.rotation;
+                stacks[i].forEach((block, j) => {
+                    const distance = hexagonRadius + (blockSize * 2.2) * (j + 0.5);
+                    const blockX = center.x + distance * Math.cos(angle);
+                    const blockY = center.y + distance * Math.sin(angle);
+                    drawBlock(blockX, blockY, block.colorKey);
+                });
+            }
+        }
+
+        function drawFallingBlocks() {
+            fallingBlocks.forEach(block => {
+                const gradient = ctx.createLinearGradient(block.x, block.y, center.x, center.y);
+                gradient.addColorStop(0, 'rgba(0, 255, 255, 0.3)');
+                gradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.setLineDash([4, 8]);
+                ctx.moveTo(block.x, block.y);
+                ctx.lineTo(center.x, center.y);
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+
+                drawBlock(block.x, block.y, block.colorKey);
+            });
+        }
+
+        function drawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                ctx.save();
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+                ctx.restore();
+            }
+        }
+
+        // --- Game Logic ---
+        function createSparks(x, y, color) {
+            const count = 15;
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3 + 1;
+                const life = Math.random() * 40 + 20;
+                particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: life, maxLife: life, color: color, size: Math.random() * 2 + 1 });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life--;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function startFrenzyMode() {
+            if (isFrenzyMode) return;
+            isFrenzyMode = true;
+            sounds.frenzyStart();
+            canvas.classList.add('frenzy-active');
+
+            stacks.forEach(stack => stack.forEach(block => block.colorKey = FRENZY_COLOR_KEY));
+            fallingBlocks.forEach(block => block.colorKey = FRENZY_COLOR_KEY);
+
+            let timeLeft = 10;
+            frenzyTimerEl.textContent = timeLeft;
+            frenzyTimerEl.style.display = 'block';
+
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                frenzyTimerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endFrenzyMode();
+                }
+            }, 1000);
+        }
+
+        function endFrenzyMode() {
+            isFrenzyMode = false;
+            sounds.frenzyEnd();
+            canvas.classList.remove('frenzy-active');
+            frenzyTimerEl.style.display = 'none';
+            
+            // No longer need to change colors back, they are now valid 'B' blocks
+            
+            frenzyScoreThreshold += frenzyScoreIncrement;
+            frenzyScoreIncrement += 250;
+        }
+
+        function spawnBlock() {
+            const sideToSpawn = Math.floor(Math.random() * SIDES);
+            const spawnAngle = ROTATION_ANGLE * sideToSpawn;
+
+            const x = center.x + outerRadius * Math.cos(spawnAngle);
+            const y = center.y + outerRadius * Math.sin(spawnAngle);
+            const colorKey = isFrenzyMode ? FRENZY_COLOR_KEY : nextColorKey;
+            nextColorKey = getRandomColorKey();
+            drawNextBlock();
+            
+            const speed = baseSize * 0.0015 * DIFFICULTY_SETTINGS[currentDifficulty].speed;
+            const angleToCenter = Math.atan2(center.y - y, center.x - x);
+            
+            fallingBlocks.push({ x, y, colorKey, vx: Math.cos(angleToCenter) * speed, vy: Math.sin(angleToCenter) * speed });
+        }
+
+        function updateFallingBlocks() {
+            for (let i = fallingBlocks.length - 1; i >= 0; i--) {
+                const block = fallingBlocks[i];
+                block.x += block.vx;
+                block.y += block.vy;
+
+                const distFromCenter = Math.hypot(block.x - center.x, block.y - center.y);
+                if (distFromCenter < hexagonRadius + blockSize) {
+                    attachBlock(block, i);
+                    continue;
+                }
+            }
+        }
+
+        function attachBlock(block, blockIndex) {
+            const angle = Math.atan2(block.y - center.y, block.x - center.x);
+            let relativeAngle = angle - centralHexagon.rotation;
+            while (relativeAngle < 0) relativeAngle += Math.PI * 2;
+            const sideIndex = Math.round(relativeAngle / ROTATION_ANGLE) % SIDES;
+
+            if (stacks[sideIndex]) {
+                stacks[sideIndex].push({ colorKey: block.colorKey });
+                const color = isFrenzyMode ? FRENZY_COLOR : COLORS[block.colorKey];
+                createSparks(block.x, block.y, color);
+                fallingBlocks.splice(blockIndex, 1);
+                sounds.attach();
+                checkForMatches(sideIndex);
+                checkGameOver();
+            }
+        }
+
+        function checkForMatches(sideIndex) {
+            const stack = stacks[sideIndex];
+            if (stack.length < 3) return;
+
+            let matchesFound = false;
+            for (let i = stack.length - 1; i >= 2; i--) {
+                if (stack[i].colorKey === stack[i-1].colorKey && stack[i].colorKey === stack[i-2].colorKey) {
+                    const matchedColorKey = stack[i].colorKey;
+                    let matchLength = 3;
+                    for (let j = i - 3; j >= 0; j--) {
+                        if (stack[j].colorKey === matchedColorKey) matchLength++;
+                        else break;
+                    }
+                    
+                    stack.splice(i - matchLength + 1, matchLength);
+                    
+                    let points = matchLength * 10 * (matchLength - 2);
+                    if (isFrenzyMode) points *= 2;
+                    score += points;
+                    scoreEl.textContent = score;
+
+                    if (!isFrenzyMode && score >= frenzyScoreThreshold) {
+                       startFrenzyMode();
+                    }
+
+                    matchesFound = true;
+                    i -= (matchLength - 1);
+                }
+            }
+            if(matchesFound) sounds.match();
+        }
+
+        function checkGameOver() {
+            if (isGameOver) return;
+            for (const stack of stacks) {
+                const stackHeight = hexagonRadius + stack.length * (blockSize * 2.2);
+                if (stackHeight > outerRadius) {
+                    isGameOver = true;
+                    gameRunning = false;
+                    sounds.gameOver();
+                    
+                    if(score > highScore) {
+                        highScore = score;
+                        localStorage.setItem('circularFallHighScore', highScore);
+                    }
+                    
+                    finalScoreEl.textContent = score;
+                    highScoreEl.textContent = highScore;
+                    gameOverModal.style.display = 'flex';
+                    break;
+                }
+            }
+        }
+        
+        function updateGame() {
+            if (isGameOver || !gameRunning) return;
+            
+            let diff = targetRotation - centralHexagon.rotation;
+            if (diff > Math.PI) diff -= Math.PI * 2;
+            if (diff < -Math.PI) diff += Math.PI * 2;
+            centralHexagon.rotation += diff * EASING_FACTOR;
+
+            updateFallingBlocks();
+            updateParticles();
+
+            spawnTimer++;
+            if (spawnTimer >= spawnInterval) {
+                spawnBlock();
+                spawnTimer = 0;
+                if (spawnInterval > 45 && !isFrenzyMode) {
+                    spawnInterval *= 0.99;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(26, 26, 46, 0.25)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, outerRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            drawHexagon(center.x, center.y, hexagonRadius, centralHexagon.rotation, '#00ffff');
+            drawFallingBlocks();
+            drawStacks();
+            drawParticles();
+        }
+
+        function gameLoop() {
+            updateGame();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Game Initialization and Reset ---
+        function resetGame() {
+            centralHexagon.rotation = 0;
+            targetRotation = 0;
+            stacks = Array.from({ length: SIDES }, () => []);
+            fallingBlocks = [];
+            particles = [];
+            score = 0;
+            spawnTimer = 0;
+            spawnInterval = DIFFICULTY_SETTINGS[currentDifficulty].interval;
+            scoreEl.textContent = score;
+            isGameOver = false;
+            isFrenzyMode = false;
+            frenzyScoreThreshold = 250;
+            frenzyScoreIncrement = 250;
+            canvas.classList.remove('frenzy-active');
+            frenzyTimerEl.style.display = 'none';
+            nextColorKey = getRandomColorKey();
+            drawNextBlock();
+        }
+        
+        function startGame(difficulty) {
+            currentDifficulty = difficulty;
+            isColorblindMode = colorblindToggle.checked;
+            Tone.start();
+            resizeCanvas();
+            resetGame();
+            gameRunning = true;
+            startModal.style.display = 'none';
+            gameOverModal.style.display = 'none';
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', resizeCanvas);
+        
+        window.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            if (e.key === 'ArrowLeft') {
+                targetRotation -= ROTATION_ANGLE;
+                sounds.rotate();
+            } else if (e.key === 'ArrowRight') {
+                targetRotation += ROTATION_ANGLE;
+                sounds.rotate();
+            }
+        });
+        
+        let touchStartX = null;
+        const swipeThreshold = 50;
+
+        function handleMoveStart(clientX) {
+            if (!gameRunning) return;
+            touchStartX = clientX;
+        }
+        
+        function handleMoveEnd(clientX) {
+            if (touchStartX === null || !gameRunning) return;
+            const dx = clientX - touchStartX;
+            if (Math.abs(dx) > swipeThreshold) {
+                if (dx > 0) {
+                    targetRotation += ROTATION_ANGLE;
+                } else {
+                    targetRotation -= ROTATION_ANGLE;
+                }
+                sounds.rotate();
+            }
+            touchStartX = null;
+        }
+
+        canvas.addEventListener('mousedown', (e) => handleMoveStart(e.clientX));
+        canvas.addEventListener('mouseup', (e) => handleMoveEnd(e.clientX));
+        canvas.addEventListener('touchstart', (e) => handleMoveStart(e.touches[0].clientX), { passive: true });
+        canvas.addEventListener('touchend', (e) => handleMoveEnd(e.changedTouches[0].clientX));
+
+        startModal.addEventListener('click', (e) => {
+            if (e.target.dataset.difficulty) {
+                startGame(e.target.dataset.difficulty);
+            }
+        });
+        restartButton.addEventListener('click', () => {
+            gameOverModal.style.display = 'none';
+            startModal.style.display = 'flex';
+        });
+
+        // --- Initial Setup ---
+        highScoreEl.textContent = highScore;
+        resizeCanvas();
+        gameLoop();
+    </script>
+</body>
+</html>
