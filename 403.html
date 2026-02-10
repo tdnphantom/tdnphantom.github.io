@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - Access Denied</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Share Tech Mono', monospace;
+            color: #ff3333;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Vignette & Scanlines */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+        }
+
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 11;
+            pointer-events: none;
+        }
+
+        /* UI Elements */
+        .ui-container {
+            position: relative;
+            z-index: 20;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 51, 51, 0.7);
+        }
+
+        .alert-box {
+            background: rgba(20, 0, 0, 0.8);
+            border: 1px solid #ff3333;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
+            transform: perspective(1000px) rotateX(10deg);
+        }
+
+        .alert-box::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border: 2px solid transparent;
+            border-top-color: #ff3333;
+            border-bottom-color: #ff3333;
+            animation: border-pulse 2s infinite;
+        }
+
+        @keyframes border-pulse {
+            0%, 100% { opacity: 1; transform: scaleX(1); }
+            50% { opacity: 0.5; transform: scaleX(1.02); }
+        }
+
+        .huge-text {
+            font-size: 5rem;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            letter-spacing: -2px;
+            background: linear-gradient(180deg, #fff, #ff3333);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .blink {
+            animation: blinker 1s linear infinite;
+        }
+
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+
+        .terminal-text {
+            text-align: left;
+            font-size: 0.8rem;
+            color: #ff8888;
+            margin-top: 2rem;
+            border-top: 1px dashed #ff3333;
+            padding-top: 1rem;
+        }
+
+        .btn-danger {
+            background: transparent;
+            border: 1px solid #ff3333;
+            color: #ff3333;
+            padding: 10px 30px;
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-danger:hover {
+            background: #ff3333;
+            color: #000;
+            box-shadow: 0 0 20px #ff3333;
+        }
+
+        /* Top Left Corner Info */
+        .hud-corner {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 20;
+            font-size: 0.8rem;
+            color: #ff3333;
+            border-left: 2px solid #ff3333;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+    <div class="scanlines"></div>
+
+    <div class="hud-corner">
+        <div>SECURITY_LEVEL: OMEGA</div>
+        <div>SECTOR: 7G [RESTRICTED]</div>
+        <div>STATUS: <span class="blink">ACCESS DENIED</span></div>
+    </div>
+
+    <div class="ui-container pointer-events-none">
+        <div class="alert-box pointer-events-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-red-900 pb-2">
+                <span class="text-xs">/// ERROR: 403_FORBIDDEN</span>
+                <span class="text-xs">ID: UNKNOWN</span>
+            </div>
+            
+            <h1 class="huge-text">ACCESS<br>DENIED</h1>
+            
+            <p class="text-xl text-red-400 mt-4 mb-6">
+                HALT. You do not have clearance to view this directory.
+            </p>
+
+            <p class="text-sm text-red-500 mb-6">
+                Your IP address has been logged. Security protocols initiated.<br>
+                Please leave the area immediately.
+            </p>
+
+            <div class="flex gap-4 justify-center">
+                <button onclick="history.back()" class="btn-danger">
+                    Return to Safety
+                </button>
+            </div>
+
+            <div class="terminal-text" id="terminal">
+                > SCANNING NETWORK...<br>
+                > USER_ID: ????<br>
+                > ACCESS_ATTEMPT: FAILED<br>
+                > TRACE_ROUTE: ACTIVE...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Terminal Typing Effect
+        const terminalText = [
+            "> UPLOADING BIOMETRICS...",
+            "> ANALYZING THREAT LEVEL...",
+            "> LOCKING DOWN SECTOR...",
+            "> NOTIFYING ADMIN...",
+            "> PREPARING COFFEE..."
+        ];
+        let lineIndex = 0;
+        
+        setInterval(() => {
+            if(lineIndex < terminalText.length) {
+                const p = document.createElement('div');
+                p.textContent = terminalText[lineIndex];
+                document.getElementById('terminal').appendChild(p);
+                lineIndex++;
+            }
+        }, 2000);
+
+
+        // --- THREE.JS SETUP ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.002); // Dark fog
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 25;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        // --- OBJECTS ---
+
+        // 1. The "Watcher" (Security Eye)
+        const watcherGroup = new THREE.Group();
+        scene.add(watcherGroup);
+
+        // Main Housing
+        const housingGeom = new THREE.SphereGeometry(4, 32, 32);
+        const housingMat = new THREE.MeshStandardMaterial({
+            color: 0x111111,
+            metalness: 0.9,
+            roughness: 0.2,
+            flatShading: false
+        });
+        const housing = new THREE.Mesh(housingGeom, housingMat);
+        watcherGroup.add(housing);
+
+        // The Lens (Glowing Red)
+        const lensGeom = new THREE.SphereGeometry(1.5, 32, 32);
+        const lensMat = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            emissive: 0xff0000,
+            emissiveIntensity: 2,
+            metalness: 1,
+            roughness: 0
+        });
+        const lens = new THREE.Mesh(lensGeom, lensMat);
+        lens.position.z = 3;
+        lens.scale.z = 0.5;
+        watcherGroup.add(lens);
+
+        // Outer Rings (Rotating Gyroscope)
+        const ringGeom = new THREE.TorusGeometry(6, 0.1, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xff3333, wireframe: true, transparent: true, opacity: 0.3 });
+        
+        const ring1 = new THREE.Mesh(ringGeom, ringMat);
+        watcherGroup.add(ring1);
+
+        const ring2 = new THREE.Mesh(ringGeom, ringMat);
+        ring2.rotation.x = Math.PI / 2;
+        ring2.scale.set(1.2, 1.2, 1.2);
+        watcherGroup.add(ring2);
+
+        const ring3 = new THREE.Mesh(ringGeom, ringMat);
+        ring3.rotation.y = Math.PI / 2;
+        ring3.scale.set(0.8, 0.8, 0.8);
+        watcherGroup.add(ring3);
+
+        // 2. The Laser Grid (Floor and Ceiling)
+        const gridHelperBottom = new THREE.GridHelper(200, 50, 0x330000, 0x110000);
+        gridHelperBottom.position.y = -10;
+        scene.add(gridHelperBottom);
+
+        const gridHelperTop = new THREE.GridHelper(200, 50, 0x330000, 0x110000);
+        gridHelperTop.position.y = 10;
+        scene.add(gridHelperTop);
+
+        // 3. Floating Particles (Dust in the laser light)
+        const particlesGeom = new THREE.BufferGeometry();
+        const pCount = 2000;
+        const pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount*3; i++) {
+            pPos[i] = (Math.random() - 0.5) * 100;
+        }
+        particlesGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({
+            size: 0.1,
+            color: 0xff0000,
+            transparent: true,
+            opacity: 0.5
+        });
+        const particles = new THREE.Points(particlesGeom, pMat);
+        scene.add(particles);
+
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0x000000);
+        scene.add(ambientLight);
+
+        // Red Spotlight mimicking the eye's gaze
+        const spotLight = new THREE.SpotLight(0xff0000, 2);
+        spotLight.position.set(0, 0, 10);
+        spotLight.angle = 0.5;
+        spotLight.penumbra = 0.5;
+        spotLight.decay = 2;
+        spotLight.distance = 200;
+        watcherGroup.add(spotLight);
+        spotLight.target = lens;
+
+        // Rim light
+        const rimLight = new THREE.PointLight(0xffffff, 0.5);
+        rimLight.position.set(-10, 10, -10);
+        scene.add(rimLight);
+
+        // --- MOUSE TRACKING ---
+        const mouse = new THREE.Vector2();
+        const targetRotation = new THREE.Vector2();
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX - windowHalfX);
+            mouse.y = (event.clientY - windowHalfY);
+        });
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // Smooth LookAt logic
+            targetRotation.x = (mouse.y * 0.001);
+            targetRotation.y = (mouse.x * 0.001);
+
+            // watcherGroup.rotation.x += (targetRotation.x - watcherGroup.rotation.x) * 5 * delta;
+            // watcherGroup.rotation.y += (targetRotation.y - watcherGroup.rotation.y) * 5 * delta;
+            
+            // Make the eye look at the mouse position in 3D space
+            // We map mouse coordinates to a point in front of the camera
+            const lookTarget = new THREE.Vector3(
+                mouse.x * 0.03,
+                -mouse.y * 0.03,
+                10
+            );
+            watcherGroup.lookAt(lookTarget);
+
+            // Rotate Rings
+            ring1.rotation.z += delta * 0.5;
+            ring2.rotation.x += delta * 0.3;
+            ring3.rotation.y += delta * 0.7;
+
+            // Pulse the eye
+            lens.material.emissiveIntensity = 2 + Math.sin(time * 10) * 1;
+            spotLight.intensity = 2 + Math.sin(time * 10) * 1;
+
+            // Move grids to simulate travel/scanning
+            gridHelperBottom.position.z = (time * 10) % 4;
+            gridHelperTop.position.z = (time * 10) % 4;
+
+            // Render
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
