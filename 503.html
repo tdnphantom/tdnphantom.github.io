@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>503 - Service Unavailable</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050200;
+            font-family: 'Rajdhani', sans-serif;
+            color: #ffaa00;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 170, 0, 0),
+                rgba(255, 170, 0, 0) 50%,
+                rgba(0, 0, 0, 0.2) 50%,
+                rgba(0, 0, 0, 0.2)
+            );
+            background-size: 100% 4px;
+        }
+
+        /* Warning Overlay */
+        .warning-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 11;
+            box-shadow: inset 0 0 100px rgba(255, 100, 0, 0.3);
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 170, 0, 0.05) 10px,
+                rgba(255, 170, 0, 0.05) 20px
+            );
+        }
+
+        /* UI Container */
+        .ui-container {
+            position: relative;
+            z-index: 20;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .glass-panel {
+            background: rgba(20, 10, 0, 0.85);
+            border: 1px solid #ffaa00;
+            border-top: 4px solid #ffaa00;
+            padding: 3rem;
+            max-width: 550px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px rgba(255, 100, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Diagonal warning stripes on the panel */
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 6px;
+            background: repeating-linear-gradient(
+                -45deg,
+                #ffaa00,
+                #ffaa00 10px,
+                #000 10px,
+                #000 20px
+            );
+        }
+
+        h1 {
+            font-size: 5rem;
+            line-height: 0.9;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            text-shadow: 2px 2px 0px #ffaa00;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #ffaa00;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 170, 0, 0.3);
+            padding-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 170, 0, 0.2);
+            margin-top: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 100%;
+            background: #ffaa00;
+            transform-origin: left;
+            animation: progress-indeterminate 2s infinite ease-in-out;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+
+        @keyframes progress-indeterminate {
+            0% { transform: scaleX(0); translateX: -100%; }
+            50% { transform: scaleX(0.5); translateX: 0%; }
+            100% { transform: scaleX(0); translateX: 100%; }
+        }
+
+        .blink-slow {
+            animation: blink 2s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Top HUD */
+        .top-hud {
+            position: absolute;
+            top: 2rem;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 2rem;
+            font-size: 0.9rem;
+            color: #ffcc00;
+            z-index: 20;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="scanlines"></div>
+    <div class="warning-overlay"></div>
+
+    <div class="top-hud">
+        <div>// ERROR: 503_SERVICE_UNAVAILABLE</div>
+        <div class="blink-slow">⚠ SYSTEM_OVERLOAD</div>
+    </div>
+
+    <div class="ui-container">
+        <div class="glass-panel">
+            <h1>503</h1>
+            <div class="subtitle">Maintenance Mode</div>
+            
+            <p class="text-gray-300 mb-6 text-lg leading-relaxed">
+                The servers are currently operating at maximum capacity or undergoing scheduled maintenance. Coolant systems are engaged.
+            </p>
+
+            <div class="flex flex-col gap-2 text-sm text-yellow-500/80 font-mono text-left bg-black/40 p-4 rounded border border-yellow-900/50">
+                <div class="flex justify-between">
+                    <span>SERVER_LOAD:</span>
+                    <span class="text-red-500">98.4% [CRITICAL]</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>EST_RECOVERY:</span>
+                    <span>&lt; 2 MINUTES</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>QUEUE_POSITION:</span>
+                    <span>#14,209</span>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar"></div>
+            </div>
+            
+            <p class="text-xs text-yellow-600 mt-2">
+                AUTOMATIC RETRY INITIATED...
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // --- THREE.JS SCENE ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050200, 0.002); // Dark orange fog
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 25;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        // --- OBJECTS ---
+
+        // 1. Unstable Core (Sphere with displacement)
+        const coreGeo = new THREE.IcosahedronGeometry(4, 20);
+        const coreMat = new THREE.MeshStandardMaterial({
+            color: 0xff4400,
+            emissive: 0xff2200,
+            emissiveIntensity: 0.5,
+            roughness: 0.4,
+            metalness: 0.8,
+            wireframe: true
+        });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(core);
+
+        // 2. Containment Rings (Broken/Tilted)
+        const ringGeo = new THREE.TorusGeometry(7, 0.2, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.4 });
+        
+        const rings = [];
+        for(let i=0; i<3; i++) {
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            rings.push(ring);
+            scene.add(ring);
+        }
+
+        // 3. Sparks / Debris (Particles flying out)
+        const particlesCount = 400;
+        const posArray = new Float32Array(particlesCount * 3);
+        const velocityArray = []; // Store velocity for each particle
+
+        for(let i = 0; i < particlesCount; i++) {
+            // Start near center
+            const r = 4 + Math.random() * 2;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            posArray[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            posArray[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+            posArray[i*3+2] = r * Math.cos(phi);
+
+            // Explosive velocity
+            velocityArray.push({
+                x: (Math.random() - 0.5) * 0.2,
+                y: (Math.random() - 0.5) * 0.2,
+                z: (Math.random() - 0.5) * 0.2
+            });
+        }
+
+        const particlesGeo = new THREE.BufferGeometry();
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        
+        const particlesMat = new THREE.PointsMaterial({
+            size: 0.2,
+            color: 0xffaa00,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+        
+        const particleSystem = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particleSystem);
+
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0x331100);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xff6600, 3, 50);
+        pointLight.position.set(0, 0, 0); // Light from inside the core
+        scene.add(pointLight);
+
+        const warnLight = new THREE.PointLight(0xff0000, 2, 40);
+        warnLight.position.set(10, 10, 10);
+        scene.add(warnLight);
+
+        // --- INTERACTION ---
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.005;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.005;
+        });
+
+        // --- ANIMATION ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // 1. Vibrate Core (Earthquake effect)
+            core.position.x = (Math.random() - 0.5) * 0.1;
+            core.position.y = (Math.random() - 0.5) * 0.1;
+            core.position.z = (Math.random() - 0.5) * 0.1;
+            
+            // Pulse Core
+            core.scale.setScalar(1 + Math.sin(time * 10) * 0.05); // Fast erratic pulse
+            core.rotation.y += 0.02;
+
+            // 2. Rotate Rings unevenly
+            rings.forEach((ring, i) => {
+                ring.rotation.x += 0.01 * (i + 1);
+                ring.rotation.y -= 0.005 * (i + 1);
+            });
+
+            // 3. Move Particles (Explosion loop)
+            const positions = particleSystem.geometry.attributes.position.array;
+            for(let i = 0; i < particlesCount; i++) {
+                // Update position based on velocity
+                positions[i*3] += velocityArray[i].x;
+                positions[i*3+1] += velocityArray[i].y;
+                positions[i*3+2] += velocityArray[i].z;
+
+                // Reset if too far
+                const dist = Math.sqrt(
+                    positions[i*3]**2 + 
+                    positions[i*3+1]**2 + 
+                    positions[i*3+2]**2
+                );
+                
+                if (dist > 30) {
+                    // Reset to center surface
+                    const r = 4;
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                    positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                    positions[i*3+2] = r * Math.cos(phi);
+                }
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.rotation.y = time * 0.1;
+
+            // 4. Warning Light Flash
+            warnLight.intensity = 1 + Math.sin(time * 5) * 1;
+
+            // 5. Camera Shake/Sway
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
